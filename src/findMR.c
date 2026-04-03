@@ -114,7 +114,7 @@ int findMR(int minmir, int mspacer, int total_bases) {
 						leftShifted = FALSE;
 
 						//need check as rightShfited grows that it doesn't swallow previous
-						if ((mrep[ndx - 2].end <= tmpStop)
+						if ((ndx >= 2) && (mrep[ndx - 2].end <= tmpStop)
 								&& (mrep[ndx - 2].start >= tmpStart)
 								&& mrep[ndx - 2].len < k) {
 							//old within new, new better
@@ -143,13 +143,12 @@ int findMR(int minmir, int mspacer, int total_bases) {
 						ndx++;
 
 						for (cBack = 1; cBack <= maxcBack; cBack++) {
-							while ((((mrep[ndx - (1 + cBack)].end >= mrep[ndx
+							while (((cBack + 1) <= ndx) && (((mrep[ndx - (1 + cBack)].end >= mrep[ndx
 									- 1].end) && (mrep[ndx - (1 + cBack)].start
 									<= mrep[ndx - 1].start)) || ((mrep[ndx - (1
 									+ cBack)].end <= mrep[ndx - 1].end)
 									&& (mrep[ndx - (1 + cBack)].start
-											>= mrep[ndx - 1].start)))
-									&& ((cBack + 1) <= ndx)) {
+											>= mrep[ndx - 1].start)))) {
 								//maximize stem length, then minimize loop length
 								if ((mrep[ndx - (1 + cBack)].len == mrep[ndx
 										- 1].len)) {//if stems are equal, keep shortest loop

@@ -8,14 +8,9 @@
  *      Procedure to read the dna file and put into array
  *
  *
- **********************************************************/
-/*
- * Defined in main module file to avoid stack overflow problem
- * can easily be 300Mb
- */
-extern char dna[];
+ /**********************************************************/
+ int read_fasta(FILE *dna_file, char fasta_title[]) {
 
-int read_fasta(FILE *dna_file, char fasta_title[]) {
 	register int i;
 	int base, fasta_len;
 	char line[MAX_LINE + 1];

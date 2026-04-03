@@ -1,16 +1,15 @@
 PGMNAME = gfa
-#CC = icc
-CC = gcc -lm
-OBJ = $(PGMNAME).o \
-cdna.o     findIR.o    nulls.o           process_repeats.o \
-findAPR.o  findMR.o    print_gff_file.o  rcdna.o \
-findDR.o   findSTR.o   is_subset.o  print_tsv_file.o  read_fasta.o \
-findGQ.o   findZDNA.o  print_usage.c     read_mult_fasta.o
-CFLAGS = -O2 
-#CFLAGS = -O2 -ansi
-LFLAGS = 
+CC = gcc
+OBJ = src/$(PGMNAME).o \
+src/globals.o src/gfa_api.o \
+src/cdna.o     src/findIR.o    src/nulls.o           src/process_repeats.o \
+src/findAPR.o  src/findMR.o    src/print_gff_file.o  src/rcdna.o \
+src/findDR.o   src/findSTR.o   src/is_subset.o  src/print_tsv_file.o  src/read_fasta.o \
+src/findGQ.o   src/findZDNA.o  src/print_usage.o     src/read_mult_fasta.o
+CFLAGS = -O2 -Isrc
+LFLAGS = -lm
 $(PGMNAME): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LFLAGS)
 
 clean:
-	rm *.o
+	rm -f src/*.o $(PGMNAME)

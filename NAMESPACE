@@ -1,0 +1,3 @@
+useDynLib(nonBgfa, .registration = TRUE)
+importFrom(Rcpp, sourceCpp)
+exportPattern("^[[:alpha:]]+")

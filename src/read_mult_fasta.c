@@ -9,11 +9,6 @@
  *
  *
  **********************************************************/
-/*
- * Defined in main module file to avoid stack overflow problem
- * can easily be 300Mb
- */
-extern char dna[];
 
 //returns
 int get_fasta_count(FILE *dna_file) {

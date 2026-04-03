@@ -1,0 +1,113 @@
+---
+title: "Non-B DNA Motif Analysis with `nonBgfa`"
+author: "Saifun Nahar"
+format:
+  html:
+    code-fold: true
+    toc: true
+---
+
+## Introduction
+
+This notebook demonstrates the usage of the refactored `nonBgfa` package to find non-B DNA forming motifs in genomic sequences. The underlying engine is an optimized C library refactored from the original GFA suite.
+
+## Setup
+
+First, we install (if necessary) and load the `nonBgfa` package.
+
+```{r}
+#| label: setup
+#| message: false
+# Ensure the package is installed from the local source
+# devtools::install(".") 
+library(nonBgfa)
+library(ggplot2)
+```
+
+## Analysis in R
+
+We will read the test sequence and find motifs using the default parameters.
+
+```{r}
+#| label: analysis-r
+# Helper to read fasta
+read_fasta_string <- function(file) {
+  lines <- readLines(file)
+  seq <- paste(lines[!grepl("^>", lines)], collapse = "")
+  return(seq)
+}
+
+# Load test data
+# (Assuming gfa_test.fasta is extracted from test_files.tar)
+fasta_file <- "gfa_test.fasta"
+if (!file.exists(fasta_file)) {
+  system("tar -xf test_files.tar gfa_test.fasta")
+}
+
+sequence <- read_fasta_string(fasta_file)
+results <- findMotifs(sequence)
+
+# Summary of found motifs
+summary_df <- data.frame(
+  MotifType = names(results),
+  Count = sapply(results, nrow)
+)
+
+print(summary_df)
+```
+
+### Visualizing Motif Distribution
+
+```{r}
+#| label: plot-r
+#| fig-cap: "Distribution of found non-B motifs along the sequence"
+
+# Combine all results for plotting
+all_motifs <- do.call(rbind, lapply(names(results), function(n) {
+  df <- results[[n]]
+  if(nrow(df) > 0) {
+    df$Type <- n
+    return(df[, c("start", "end", "Type")])
+  }
+  return(NULL)
+}))
+
+ggplot(all_motifs, aes(x = start, xend = end, y = Type, yend = Type, color = Type)) +
+  geom_segment(size = 2) +
+  theme_minimal() +
+  labs(title = "Location of Non-B DNA Motifs", x = "Position (bp)", y = "")
+```
+
+## Analysis in Python
+
+Python users can interface with the R package using the `reticulate` library.
+
+```{python}
+#| label: analysis-python
+import pandas as pd
+
+# This assumes 'reticulate' is configured to allow Python to call R
+# and that 'nonBgfa' is available in the R environment.
+try:
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects import r, globalenv
+    
+    # Import the R package
+    nonBgfa = importr('nonBgfa')
+    
+    # Call the R function from Python
+    # We can pass the sequence from R to Python or vice versa
+    seq_python = r('sequence')
+    py_results = r('findMotifs(sequence)')
+    
+    print("Python received results for:", py_results.names)
+    # Convert one to a pandas DataFrame if needed
+    # ir_df = pd.DataFrame(py_results.rx2('IR'))
+    # print(ir_df.head())
+except ImportError:
+    print("rpy2 not installed, skipping Python integration demo.")
+```
+
+## Conclusion
+
+The `nonBgfa` package provides a high-performance, cross-language interface for genomic feature analysis. The refactored memory strategy ensures it can handle large sequences efficiently within modern data science workflows.

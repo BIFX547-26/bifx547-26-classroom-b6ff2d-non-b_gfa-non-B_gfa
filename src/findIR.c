@@ -115,7 +115,7 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 						leftShifted = FALSE;
 
 						//need check as rightShfited grows that it doesn't swallow previous
-						if ((irep[ndx - 2].end <= tmpStop)
+						if ((ndx >= 2) && (irep[ndx - 2].end <= tmpStop)
 								&& (irep[ndx - 2].start >= tmpStart)
 								&& irep[ndx - 2].len < k) {
 							//old within new, new better
@@ -143,13 +143,12 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 						ndx++;
 
 						for (cBack = 1; cBack <= maxcBack; cBack++) {
-							while ((((irep[ndx - (1 + cBack)].end >= irep[ndx
+							while (((cBack + 1) <= ndx) && (((irep[ndx - (1 + cBack)].end >= irep[ndx
 									- 1].end) && (irep[ndx - (1 + cBack)].start
 									<= irep[ndx - 1].start)) || ((irep[ndx - (1
 									+ cBack)].end <= irep[ndx - 1].end)
 									&& (irep[ndx - (1 + cBack)].start
-											>= irep[ndx - 1].start)))
-									&& ((cBack + 1) <= ndx)) {
+											>= irep[ndx - 1].start)))) {
 								//maximize stem length, then minimize loop length
 								if ((irep[ndx - (1 + cBack)].len == irep[ndx
 										- 1].len)) {//if stems are equal, keep shortest loop
