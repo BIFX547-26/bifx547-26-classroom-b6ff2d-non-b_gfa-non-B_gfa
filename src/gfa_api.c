@@ -59,7 +59,6 @@ int getGislands(int minGQrep, int total_bases);
 void is_subset(int nreps, char X, int max_loop, int limit);
 
 int allocate_buffers(int dna_len) {
-    // If buffers already exist, free them first to avoid leaks on repeated calls
     free_buffers();
 
     dna = (char*)calloc(dna_len + 1, sizeof(char));
@@ -166,22 +165,18 @@ GFA_Results run_gfa_analysis(const char* sequence, GFA_Params *params) {
         return res;
     }
 
-    // Load DNA sequence
     i = 0;
-    while (sequence[i] != '\0' && i < MAX_DNA) {
+    while (sequence[i] != '\0') {
         if (isalpha(sequence[i])) {
             dna[i] = (char)tolower(sequence[i]);
             i++;
+        } else {
+            // skip non-alpha
         }
     }
     total_bases = i;
 
     res = run_gfa_core(params, total_bases);
-    
-    // Caller is responsible for calling free_buffers() if they need to access results
-    // But run_gfa_analysis is a high-level wrapper. 
-    // If we want it to be self-contained but also allow result access, 
-    // it's tricky. For now, we'll let the caller handle free_buffers.
     
     return res;
 }

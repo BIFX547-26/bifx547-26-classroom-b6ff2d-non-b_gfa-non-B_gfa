@@ -8,13 +8,12 @@
  *  Program to locate possible cruciforms in nucleic acid sequence *
  *******************************************************************/
 
-void delIRep(int nreps, int toRemove) {//shifts stack down, but does not reset ndx
+static void delIRep_safe(int nreps, int toRemove) {
 	int i = 0;
+	if (toRemove < 0 || toRemove >= nreps) return;
 	for (i = toRemove; i < nreps; i++) {
 		irep[i] = irep[i + 1];
 	}
-	//fprintf(stderr, " removed start %d stop %d  \n", mrep[toRemove].start,mrep[toRemove].end);
-
 }
 
 int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
@@ -31,18 +30,13 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 	BOOLEAN rightShifted = FALSE;
 	BOOLEAN leftShifted = FALSE;
 
-	/*******************************************
-	 * Start looking for inverted repeats*******
-	 *******************************************
-	 */
 	for (strti = mincrf; strti <= (total_bases - mincrf); strti++) {
 		maxSP = min(cspacer,(total_bases-(strti+mincrf)));
 		for (sp = 0; sp <= maxSP; sp++) {
 			i = strti;
 			k = 0;
 			j = strti + sp + 1;
-			while ((dna[i] == dna3[j]) && (j < (total_bases)) && (i >= 0)
-					&& (dna[j] != 'n')) {
+			while ((i >= 0) && (j < total_bases) && (dna[i] == dna3[j]) && (dna[j] != 'n')) {
 				k++;
 				j++;
 				i--;
@@ -51,13 +45,16 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 				if ((k <= cut) && (sp > shortSpacer)) {//check for short IR spacers
 					continue;
 				}
-				tmpStart = ((strti - k) + 2);// in ncbi coordinates (+1 to array cords)
-				tmpStop = (strti + k + sp + 1);// in ncbi coordinates (+1 to array cords)
-				if ((ndx == 0)) {//first one, can't compare current to prev if prev doesn't exist
+				tmpStart = ((strti - k) + 2);
+				tmpStop = (strti + k + sp + 1);
+				
+				if (ndx >= MAX_REPS) return ndx;
+
+				if ((ndx == 0)) {
 					rightShifted = FALSE;
 					leftShifted = FALSE;
 					irep[ndx].start = tmpStart;
-					irep[ndx].sub = tmpStop;//min loop boundary set to end by default
+					irep[ndx].sub = tmpStop;
 					irep[ndx].len = k;
 					irep[ndx].loop = sp;
 					irep[ndx].num = 1;
@@ -65,76 +62,60 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 					irep[ndx].strand = 0;
 					ndx++;
 				}
-				else {//Not first one
-
-					//check for immediate inclusions
-					//old within new, new larger looped
-					while ((irep[ndx - 1].end <= tmpStop)
-							&& (irep[ndx - 1].start >= tmpStart) && irep[ndx
-							- 1].len < k && ((ndx - 1) >= 0)) {
-						//old within new, new better
-						ndx--;//replace previous
+				else {
+					while ((ndx > 0) && (irep[ndx - 1].end <= tmpStop)
+							&& (irep[ndx - 1].start >= tmpStart) && (irep[ndx - 1].len < k)) {
+						ndx--;
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					//new within old, new better
-					while ((irep[ndx - 1].end >= tmpStop)
-							&& (irep[ndx - 1].start <= tmpStart) && irep[ndx
-							- 1].len < k && ((ndx - 1) >= 0)) {
-						ndx--;//replace previous
-						rightShifted = FALSE;
-						leftShifted = FALSE;
-
-					}
-					//old within new, old better
-					if ((irep[ndx - 1].end <= tmpStop) && (irep[ndx - 1].start
-							>= tmpStart) && irep[ndx - 1].len > k) {
-						//don't add new
+					while ((ndx > 0) && (irep[ndx - 1].end >= tmpStop)
+							&& (irep[ndx - 1].start <= tmpStart) && (irep[ndx - 1].len < k)) {
+						ndx--;
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					//new within old, old better
-					if ((irep[ndx - 1].end >= tmpStop) && (irep[ndx - 1].start
-							<= tmpStart) && irep[ndx - 1].len > k) {
-						//don't add new
+					if ((ndx > 0) && (irep[ndx - 1].end <= tmpStop) && (irep[ndx - 1].start
+							>= tmpStart) && (irep[ndx - 1].len > k)) {
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					else if ((tmpStop == irep[ndx - 1].end) && (k == irep[ndx
+					else if ((ndx > 0) && (irep[ndx - 1].end >= tmpStop) && (irep[ndx - 1].start
+							<= tmpStart) && (irep[ndx - 1].len > k)) {
+						rightShifted = FALSE;
+						leftShifted = FALSE;
+					}
+					else if ((ndx > 0) && (tmpStop == irep[ndx - 1].end) && (k == irep[ndx
 							- 1].len) && (!rightShifted)) {
-						leftShifted = TRUE;//to check for alternate shifting
+						leftShifted = TRUE;
 						rightShifted = FALSE;
 						ndx--;
-						irep[ndx].num = irep[ndx].num + 1;//add one to Permutation count
-						irep[ndx].sub = tmpStart;//adjust minimum loop boundary
+						irep[ndx].num = irep[ndx].num + 1;
+						irep[ndx].sub = tmpStart;
 						ndx++;
 					}
-					else if ((tmpStart == irep[ndx - 1].start) && (k
+					else if ((ndx > 0) && (tmpStart == irep[ndx - 1].start) && (k
 							== irep[ndx - 1].len) && (!leftShifted)) {
-						rightShifted = TRUE;//to check for alternate shifting
+						rightShifted = TRUE;
 						leftShifted = FALSE;
 
-						//need check as rightShfited grows that it doesn't swallow previous
 						if ((ndx >= 2) && (irep[ndx - 2].end <= tmpStop)
 								&& (irep[ndx - 2].start >= tmpStart)
-								&& irep[ndx - 2].len < k) {
-							//old within new, new better
-							//replace old with current shifting
+								&& (irep[ndx - 2].len < k)) {
 							irep[ndx - 2] = irep[ndx - 1];
-							ndx--;//replace previous
+							ndx--;
 						}
 
 						ndx--;
-						irep[ndx].num = (irep[ndx].num + 1);//add one to Permutation count
-						irep[ndx].end = tmpStop;//adjust end
-						//mrep[ndx].sub = -12;
+						irep[ndx].num = (irep[ndx].num + 1);
+						irep[ndx].end = tmpStop;
 						ndx++;
 					}
-					else {//neither shifted, add new repeat
+					else {
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 						irep[ndx].start = tmpStart;
-						irep[ndx].sub = tmpStop;//min loop boundary set to end by default
+						irep[ndx].sub = tmpStop;
 						irep[ndx].len = k;
 						irep[ndx].loop = sp;
 						irep[ndx].num = 1;
@@ -143,38 +124,29 @@ int findIR(int mincrf, int cspacer, int cut, int shortSpacer, int total_bases) {
 						ndx++;
 
 						for (cBack = 1; cBack <= maxcBack; cBack++) {
-							while (((cBack + 1) <= ndx) && (((irep[ndx - (1 + cBack)].end >= irep[ndx
-									- 1].end) && (irep[ndx - (1 + cBack)].start
-									<= irep[ndx - 1].start)) || ((irep[ndx - (1
-									+ cBack)].end <= irep[ndx - 1].end)
-									&& (irep[ndx - (1 + cBack)].start
-											>= irep[ndx - 1].start)))) {
-								//maximize stem length, then minimize loop length
-								if ((irep[ndx - (1 + cBack)].len == irep[ndx
-										- 1].len)) {//if stems are equal, keep shortest loop
-									//if previous loop is larger, delete it
-									if ((irep[ndx - (1 + cBack)].loop
-											> irep[ndx - 1].loop)) {
-										delIRep((ndx - 1), (ndx - (1 + cBack)));
+							while (((cBack + 1) <= ndx) && 
+                                   (((irep[ndx - (1 + cBack)].end >= irep[ndx - 1].end) && 
+                                     (irep[ndx - (1 + cBack)].start <= irep[ndx - 1].start)) || 
+                                    ((irep[ndx - (1 + cBack)].end <= irep[ndx - 1].end) && 
+                                     (irep[ndx - (1 + cBack)].start >= irep[ndx - 1].start)))) {
+								if (irep[ndx - (1 + cBack)].len == irep[ndx - 1].len) {
+									if (irep[ndx - (1 + cBack)].loop > irep[ndx - 1].loop) {
+										delIRep_safe((ndx - 1), (ndx - (1 + cBack)));
 									}
 								}
-								//otherwise keep longest stem
-
-								else if ((irep[ndx - (1 + cBack)].len
-										< irep[ndx - 1].len)) {//previous stem is shorter = delete it
-									delIRep((ndx - 1), (ndx - (1 + cBack)));
+								else if (irep[ndx - (1 + cBack)].len < irep[ndx - 1].len) {
+									delIRep_safe((ndx - 1), (ndx - (1 + cBack)));
 								}
-								//reset everything and remove end ndx
 								rightShifted = FALSE;
 								leftShifted = FALSE;
 								--ndx;
 								cBack = 1;
 							}
-						}//while
-					}//for cBack
-				}//else first
-			}//if ndx > maxcBack + 2
-		}//if maxcBack>0
-	}//if k>minmir
+						}
+					}
+				}
+			}
+		}
+	}
 	return (ndx);
-}/* END of findIR*/
+}

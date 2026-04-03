@@ -8,13 +8,12 @@
  *
  *****************************/
 
-void delMRep(int nreps, int toRemove) {//shifts stack down, but does not reset ndx
+static void delMRep_safe(int nreps, int toRemove) {
 	int i = 0;
+	if (toRemove < 0 || toRemove >= nreps) return;
 	for (i = toRemove; i < nreps; i++) {
 		mrep[i] = mrep[i + 1];
 	}
-	//fprintf(stderr, " removed start %d stop %d  \n", mrep[toRemove].start,mrep[toRemove].end);
-
 }
 
 int findMR(int minmir, int mspacer, int total_bases) {
@@ -31,150 +30,120 @@ int findMR(int minmir, int mspacer, int total_bases) {
 	BOOLEAN rightShifted = FALSE;
 	BOOLEAN leftShifted = FALSE;
 
-	/*******************************************
-	 * Start looking for mirrors ************
-	 *******************************************
-	 */
 	for (strti = minmir; strti <= (total_bases - minmir); strti++) {
 		maxSP = min(mspacer,(total_bases-(strti+minmir)));
 		for (sp = 0; sp <= maxSP; sp++) {
 			i = strti;
 			k = 0;
 			j = strti + sp + 1;
-			while ((dna[i] == dna[j]) && (j < (total_bases)) && (i >= 0)
-					&& (dna[j] != 'n')) {
+			while ((i >= 0) && (j < total_bases) && (dna[i] == dna[j]) && (dna[j] != 'n')) {
 				k++;
 				j++;
 				i--;
 			}
 			if (k >= minmir) {
-				tmpStart = ((strti - k) + 2);// in ncbi coordinates (+1 to array cords)
-				tmpStop = (strti + k + sp + 1);// in ncbi coordinates (+1 to array cords)
-				if ((ndx == 0)) {//first one, can't compare current to prev if prev doesn't exist
+				tmpStart = ((strti - k) + 2);
+				tmpStop = (strti + k + sp + 1);
+				
+				if (ndx >= MAX_REPS) return ndx;
+
+				if ((ndx == 0)) {
 					rightShifted = FALSE;
 					leftShifted = FALSE;
 					mrep[ndx].start = tmpStart;
-					mrep[ndx].sub = tmpStop;//min loop boundary set to end by default
+					mrep[ndx].sub = tmpStop;
 					mrep[ndx].len = k;
 					mrep[ndx].loop = sp;
 					mrep[ndx].num = 1;
 					mrep[ndx].end = tmpStop;
 					mrep[ndx].strand = 0;
-
 					ndx++;
 				}
-				else {//Not first one
-
-					//check for immediate inclusions
-					//old within new, new larger looped
-					while ((mrep[ndx - 1].end <= tmpStop)
-							&& (mrep[ndx - 1].start >= tmpStart) && mrep[ndx
-							- 1].len < k) {
-						//old within new, new better
-						ndx--;//replace previous
+				else {
+					while ((ndx > 0) && (mrep[ndx - 1].end <= tmpStop)
+							&& (mrep[ndx - 1].start >= tmpStart) && mrep[ndx - 1].len < k) {
+						ndx--;
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					//new within old, new better
-					while ((mrep[ndx - 1].end >= tmpStop)
-							&& (mrep[ndx - 1].start <= tmpStart) && mrep[ndx
-							- 1].len < k) {
-						ndx--;//replace previous
+					while ((ndx > 0) && (mrep[ndx - 1].end >= tmpStop)
+							&& (mrep[ndx - 1].start <= tmpStart) && mrep[ndx - 1].len < k) {
+						ndx--;
 						rightShifted = FALSE;
 						leftShifted = FALSE;
-
 					}
-					//old within new, old better
-					if ((mrep[ndx - 1].end <= tmpStop) && (mrep[ndx - 1].start
+					if ((ndx > 0) && (mrep[ndx - 1].end <= tmpStop) && (mrep[ndx - 1].start
 							>= tmpStart) && mrep[ndx - 1].len > k) {
-						//don't add new
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					//new within old, old better
-					if ((mrep[ndx - 1].end >= tmpStop) && (mrep[ndx - 1].start
+					else if ((ndx > 0) && (mrep[ndx - 1].end >= tmpStop) && (mrep[ndx - 1].start
 							<= tmpStart) && mrep[ndx - 1].len > k) {
-						//don't add new
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 					}
-					else if ((tmpStop == mrep[ndx - 1].end) && (k == mrep[ndx
+					else if ((ndx > 0) && (tmpStop == mrep[ndx - 1].end) && (k == mrep[ndx
 							- 1].len) && (!rightShifted)) {
-						leftShifted = TRUE;//to check for alternate shifting
+						leftShifted = TRUE;
 						rightShifted = FALSE;
 						ndx--;
-						mrep[ndx].num = mrep[ndx].num + 1;//add one to Permutation count
-						mrep[ndx].sub = tmpStart;//adjust minimum loop boundary
-						//mrep[ndx].sub = -11;
+						mrep[ndx].num = mrep[ndx].num + 1;
+						mrep[ndx].sub = tmpStart;
 						ndx++;
 					}
-					else if ((tmpStart == mrep[ndx - 1].start) && (k
+					else if ((ndx > 0) && (tmpStart == mrep[ndx - 1].start) && (k
 							== mrep[ndx - 1].len) && (!leftShifted)) {
-						rightShifted = TRUE;//to check for alternate shifting
+						rightShifted = TRUE;
 						leftShifted = FALSE;
 
-						//need check as rightShfited grows that it doesn't swallow previous
 						if ((ndx >= 2) && (mrep[ndx - 2].end <= tmpStop)
 								&& (mrep[ndx - 2].start >= tmpStart)
-								&& mrep[ndx - 2].len < k) {
-							//old within new, new better
-							//replace old with current shifting
+								&& (mrep[ndx - 2].len < k) && (ndx >= 2)) {
 							mrep[ndx - 2] = mrep[ndx - 1];
-							ndx--;//replace previous
+							ndx--;
 						}
 
 						ndx--;
-						mrep[ndx].num = (mrep[ndx].num + 1);//add one to Permutation count
-						mrep[ndx].end = tmpStop;//adjust end
-						//mrep[ndx].sub = -12;
+						mrep[ndx].num = (mrep[ndx].num + 1);
+						mrep[ndx].end = tmpStop;
 						ndx++;
 					}
-					else {//neither shifted, add new repeat
+					else {
 						rightShifted = FALSE;
 						leftShifted = FALSE;
 						mrep[ndx].start = tmpStart;
-						mrep[ndx].sub = tmpStop;//min loop boundary set to end by default
+						mrep[ndx].sub = tmpStop;
 						mrep[ndx].len = k;
 						mrep[ndx].loop = sp;
 						mrep[ndx].num = 1;
 						mrep[ndx].end = tmpStop;
 						mrep[ndx].strand = 0;
-
 						ndx++;
 
 						for (cBack = 1; cBack <= maxcBack; cBack++) {
-							while (((cBack + 1) <= ndx) && (((mrep[ndx - (1 + cBack)].end >= mrep[ndx
-									- 1].end) && (mrep[ndx - (1 + cBack)].start
-									<= mrep[ndx - 1].start)) || ((mrep[ndx - (1
-									+ cBack)].end <= mrep[ndx - 1].end)
-									&& (mrep[ndx - (1 + cBack)].start
-											>= mrep[ndx - 1].start)))) {
-								//maximize stem length, then minimize loop length
-								if ((mrep[ndx - (1 + cBack)].len == mrep[ndx
-										- 1].len)) {//if stems are equal, keep shortest loop
-									//if previous loop is larger, delete it
-									if ((mrep[ndx - (1 + cBack)].loop
-											> mrep[ndx - 1].loop)) {
-										delMRep((ndx - 1), (ndx - (1 + cBack)));
+							while (((cBack + 1) <= ndx) && 
+                                   (((mrep[ndx - (1 + cBack)].end >= mrep[ndx - 1].end) && 
+                                     (mrep[ndx - (1 + cBack)].start <= mrep[ndx - 1].start)) || 
+                                    ((mrep[ndx - (1 + cBack)].end <= mrep[ndx - 1].end) && 
+                                     (mrep[ndx - (1 + cBack)].start >= mrep[ndx - 1].start)))) {
+								if (mrep[ndx - (1 + cBack)].len == mrep[ndx - 1].len) {
+									if (mrep[ndx - (1 + cBack)].loop > mrep[ndx - 1].loop) {
+										delMRep_safe((ndx - 1), (ndx - (1 + cBack)));
 									}
 								}
-								//otherwise keep longest stem
-
-								else if ((mrep[ndx - (1 + cBack)].len
-										< mrep[ndx - 1].len)) {//previous stem is shorter = delete it
-									delMRep((ndx - 1), (ndx - (1 + cBack)));
+								else if (mrep[ndx - (1 + cBack)].len < mrep[ndx - 1].len) {
+									delMRep_safe((ndx - 1), (ndx - (1 + cBack)));
 								}
-								//reset everything and remove end ndx
 								rightShifted = FALSE;
 								leftShifted = FALSE;
 								--ndx;
 								cBack = 1;
 							}
-						}//while
-					}//for cBack
-				}//else first
-			}//if ndx > maxcBack + 2
-		}//if maxcBack>0
-	}//if k>minmir
+						}
+					}
+				}
+			}
+		}
+	}
 	return (ndx);
-}/* END of findMR*/
+}

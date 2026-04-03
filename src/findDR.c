@@ -9,9 +9,6 @@
  *****************************/
 int findDR(int mindir, int maxdir, int dspacer, int total_bases) {
 
-	time_t rawtime;
-	time(&rawtime);
-
 	register int j, i, k, sp, end;
 	int strti = 0;
 	int ndx = 0;
@@ -23,14 +20,10 @@ int findDR(int mindir, int maxdir, int dspacer, int total_bases) {
 	int totlen;
 	i = j = k = sp = size = end = 0;
 
-	/*******************************************
-	 * Start looking for direct repeats ********
-	 *******************************************
-	 /*/
 	lasti = total_bases - (mindir * 2); //last i value that needs to be examined
 
 	for (strti = 0; strti <= lasti; strti++) {
-		while (dna[strti] == 'n') {//skip n's
+		while (strti <= lasti && dna[strti] == 'n') {//skip n's
 			strti++;
 		}
 		if (strti >= lasti) {
@@ -38,22 +31,18 @@ int findDR(int mindir, int maxdir, int dspacer, int total_bases) {
 		}
 
 		for (size = maxdir; size >= mindir; size--) {
-			if (((size * 2) + dspacer) <= (end - strti)) {// sizes are not big enough to escape prev.
+			if (((size * 2) + dspacer) <= (end - strti)) {
 				sp = dspacer;
 				size = sizeMin;
 				continue;
-				//break;
 			}
-			//only examine spacers that give large enough repeats to escape previous
 			spMin = max(0,((end-strti)-(size*2))+2);
-			//watch for end of sequence
 			spMax = min(dspacer,lasti-strti);
 			for (sp = spMin; sp <= spMax; sp++) {
 				j = strti + size + sp;
 				i = strti;
 				k = 0;
-				while (dna[i] == dna[j] && k < size && dna[i] != 'n' && j
-						< total_bases) { //using while so we can not compare all if not required
+				while (j < total_bases && dna[i] == dna[j] && k < size && dna[i] != 'n') { 
 					k++;
 					j++;
 					i++;
@@ -61,19 +50,21 @@ int findDR(int mindir, int maxdir, int dspacer, int total_bases) {
 				if (k == size) {//DR found!
 					totlen = k;
 					if (sp == 0) {
-						while (dna[i] == dna[j]) {//expand Big Tandem Repeat (BTR)
+						while (j < total_bases && dna[i] == dna[j]) {
 							totlen++;
 							j++;
 							i++;
 						}
 					}
-					//Set new DR
+					
+					if (ndx >= MAX_REPS) return ndx;
+
 					drep[ndx].start = strti + 1;
 					drep[ndx].len = size;
 					drep[ndx].loop = sp;
-					drep[ndx].num = totlen / drep[ndx].len; //repeats
+					drep[ndx].num = totlen / size;
 					drep[ndx].end = j;
-					drep[ndx].sub = (totlen % drep[ndx].len); //remainder
+					drep[ndx].sub = (totlen % size);
 					drep[ndx].strand = 0;
 
 					ndx++;
@@ -85,4 +76,4 @@ int findDR(int mindir, int maxdir, int dspacer, int total_bases) {
 		}
 	}
 	return (ndx);
-}/* END of direct*/
+}

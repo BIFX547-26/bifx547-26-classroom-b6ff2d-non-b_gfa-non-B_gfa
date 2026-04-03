@@ -11,10 +11,6 @@
  */
 
 int pupy(int pos) {
-	//int GCscore = 25;
-	//int nonGCscore = 3;
-
-
 	int isPPY = 0;
 	if (dna[pos] == 'a') {
 		if (dna[pos + 1] == 'c') {
@@ -46,15 +42,14 @@ int pupy(int pos) {
 }
 
 int findZDNA(int minZ, int total_bases) {
-	register int i, j;
-	j = 0;
+	register int i;
 	i = 0;
 	int ndx = 0;
 	int tmpPPY = 0;
 	int npy = 1;
 	int kvsum = 0;
 
-	while (i < (total_bases - minZ)) {
+	while (i < (total_bases - 1)) {
 		tmpPPY = pupy(i);
 		if (tmpPPY > 0) {
 			npy++;
@@ -62,12 +57,13 @@ int findZDNA(int minZ, int total_bases) {
 		}
 		else {
 			if (npy >= minZ) {
-				zrep[ndx].start = i - npy +2;
+				if (ndx >= MAX_REPS) return ndx;
+				zrep[ndx].start = i - npy + 2;
 				zrep[ndx].len = npy;
 				zrep[ndx].loop = kvsum / 2;//KV score
-				zrep[ndx].num = 0;//  G/C C/G count (25 pts)
+				zrep[ndx].num = 0;
 				zrep[ndx].end = i+1;
-				zrep[ndx].sub = 0;//non G/C C/G count (3 pts)
+				zrep[ndx].sub = 0;
 				zrep[ndx].strand = 0;
 				ndx++;
 			}

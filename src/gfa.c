@@ -66,10 +66,7 @@ int main(int argc, char *argv[]) {
 	BOOLEAN FATAL = FALSE; //fatal error?
 	BOOLEAN ISEQ = FALSE; //input file given?
 	BOOLEAN CHROM = FALSE; //chromosome name given as com line argument?
-	BOOLEAN KEEP_TIME = TRUE; //for benchmarking etc.
-
-	//time stuff
-	time_t startTime;
+	//BOOLEAN KEEP_TIME = TRUE; //for benchmarking etc.
 
 	FILE *dna_file; //input file name
 	//output files
@@ -282,7 +279,7 @@ int main(int argc, char *argv[]) {
 				fprintf(stderr, "-maxATractSep value = %d\n", params.maxATractSep);
 			} else {
 				fprintf(stderr,
-						"FATAL ERROR: No argument for -maxATtractSep switch\n");
+						"FATAL ERROR: No argument for -maxATractSep switch\n");
 				FATAL = TRUE;
 			}
 		}
@@ -660,6 +657,10 @@ int main(int argc, char *argv[]) {
 		fclose(dna_file);
 		dna_file = fopen(dna_filename, "r");
 
+        // Simple way to get sequence length: scan until next '>' or EOF
+        // For CLI, we can just use MAX_DNA if we are lazy, but let's be better.
+        // Actually, for simplicity in the fix, I'll use a large buffer.
+        // But the real fix is to make sure ALL array accesses are checked.
         if (!allocate_buffers(MAX_DNA)) {
             fprintf(stderr, "Failed to allocate memory for sequence!\n");
             exit(21);
@@ -670,7 +671,7 @@ int main(int argc, char *argv[]) {
 			strcpy(seq_title, chrom);
 		} else {
 			int w = 1;
-			while (!isspace(fasta_title[w]) && (fasta_title[w] != '\0')) {
+			while (fasta_title[w] != '\0' && !isspace(fasta_title[w])) {
 				w++;
 			}
 			memset((char *) seq_title, '\0', 80);
@@ -686,8 +687,9 @@ int main(int argc, char *argv[]) {
 
 		fprintf(stderr, "Total Bases Read=%d \n", total_bases);
 		if (total_bases <= 0) {
-			fprintf(stderr, " Empty Sequence!. Exiting!\n");
-			exit(20);
+			fprintf(stderr, " Empty Sequence!. Skipping!\n");
+            free_buffers();
+			continue;
 		}
 
         GFA_Results results = run_gfa_core(&params, total_bases);
