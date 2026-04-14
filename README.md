@@ -1,82 +1,276 @@
-# non-B-gfa
-gfa programs for Non-B site at NCI/FNLCR
+# nonBgfa: Genomic Feature Analyzer R Package
 
-gfa is a Suite of programs developed at NCI-Frederick/Frederick National Lab to find sequences associated with non-B DNA forming motifs
+An R package for identifying and analyzing non-B DNA motifs and genomic features in nucleic acid sequences. This is a refactored R wrapper around the legacy non-B_gfa codebase, organized into a modern R package structure.
 
-DNA exists in many possible conformations that include the A-DNA, B-DNA, and Z-DNA forms; of these, B-DNA is the most common form found in cells. The DNAs that do not fall into a right-handed Watson-Crick double-helix are known as non-B DNAs and comprise cruciform, triplex, slipped (hairpin) structures, tetraplex (G-quadruplex), left-handed Z-DNA, and others. Several recent publications have provided significant evidence that non-B DNA structures may play a role in DNA instability and mutagenesis, leading to both DNA rearrangements and increased mutational rates, which are hallmark of cancer.
+## Overview
 
-**Website for submitting sequences: https://nonb-abcc.ncifcrf.gov/apps/site/default**
+The **nonBgfa** package detects and characterizes various non-B DNA structures and sequence features, including:
 
-The results from the website are based on the default values of gfa and should match the example output (included in the tar file) when the example (below) is run as shown. 
+- **APR** - A-Phased Repeats (alternating A/T base patterns)
+- **DR** - Direct Repeats (identical sequences in direct orientation)
+- **GQ** - G-Quadruplexes (four-stranded G4 structures)
+- **IR** - Inverted Repeats (sequences followed by reverse complement)
+- **MR** - Mirror Repeats (palindromic repeat patterns)
+- **STR** - Short Tandem Repeats (microsatellites)
+- **Z** - Z-DNA (left-handed DNA conformation)
 
+## Installation
 
-Please cite: Non-B DB v2.0: a database of predicted non-B DNA-forming motifs and its associated tools.
-Regina Z. Cer, Duncan E. Donohue, Uma S. Mudunuri, Nuri A. Temiz, Michael A. Loss, Nathan J. Starner, Goran N. Halusa, Natalia Volfovsky, Ming Yi, Brian T. Luke, Albino Bacolla, Jack R. Collins and Robert M. Stephens.
-Nucl. Acids Res. (2013) 41 (D1): D94-D100. doi: 10.1093/nar/gks955
+### Prerequisites
+
+- R 4.0 or later
+- A C compiler (for building from source)
+- The FASTA input file containing your sequences
+
+### Installing from source
+
+```r
+# Using devtools
+devtools::install()
+
+# Or using R CMD INSTALL
+R CMD INSTALL .
+```
+
+## Package Structure
+
+The package is organized as follows:
 
 ```
-************************  GFA2    ********************************************
-
-usage:./gfa -seq <input_fasta_filename> -out <output_file_prefix> [optional_switches]
-*****************************************************************************
- GFA2 takes in a DNA sequence in fasta format and returns Gene Feature Format
- (.gff) and Tab Separated Value (.tsv) files containing the location and details of potential non-B DNA forming motifs. 
- 
-Required Switches:
-	-seq <string>; The filename for the input DNA fasta file.
-	-out <string>; The output filename prefix.
-	Motif abbreviations and file extension are automatically appended.
- 
-Optional Integer Switches:  Each switch is followed by its default value.
-		All values refer to sequential nucleotides.
-		Note: if an integer switch is given, its associated value is required.
-	-minGQrep <3>; The minimum number of consecutive G's to form a G run (no max).
-	-maxGQspacer <7>; The maximum allowed distance between G runs (min of 1).
-	-minMRrep <10>; The minimum length of half of a mirror repeat (no max).
-	-maxMRspacer <100>; The c mirror repeat halves (min = 0).
-	-minIRrep <6>; The minimum length of half of an inverted repeat (no max).
-	-maxIRspacer <100>; The maximum allowed distance between inverted repeat halves (min = 0).
-	-shortIRcut <9>; The maximum length of half of an inverted repeat for it to be considered "short".
-	-shortIRspacer <4>; The maximum allowed distance between short inverted repeat halves (min = 0).
-	-minDRrep <10>; The minimum length of half of a direct repeat.
-	-maxDRrep <300>; The maximum length of half of a direct repeat.
-	-maxDRspacer <100>; The maximum allowed distance between direct repeat halves (min = 0).
-	-minATracts <3>; The minimum number of consecutive A Tracts to form an A-Phased Repeat.
-	-minATractSep <10>; The minimum separation between A Tracts centers.
-	-maxATractSep <11>; The maximum separation between A Tracts centers.
-	-maxAPRlen <9>; The maximum number of consecutive As allowed in an A tract.
-	-minAPRlen <3>; The minimum number of consecutive As allowed in an A tract.
-	-minZlen <10>; The minimum length of Z-DNA alternating purine/pyramadine run (no max).
-	-minSTR <1>; The minimum length of repeating element in short tandem repeats.
-	-maxSTR <9>; The maximum length of repeating element in short tandem repeats.
-	-minSTRbp <8>; The minimum overall length for qualification as a short tandem repeat.
-	-minCruciformRep <6>; The minimum repeat length for IR to qualify as cruciform.
-	-maxCruciformSpacer <4>; The maximum spacer length for IR to qualify as cruciform.
-	-minTriplexYRpercent <10>; The minimum purine/pyramadine percent contend for MR to qualify as triplex.
-	-maxTriplexSpacer <8>; The maximum spacer length for MR to qualify as triplex.
-	-maxSlippedSpacer <0>; The maximum spacer length for DR to qualify as slipped.
- 
-Other Optional Switches: (not followed by values)
-	-chrom <string>; An identifier for the input sequence, "chr1" for example.
-	   If not given, the first word of the fasta title string is used
-	-skipAPR; Do not search for A-Phased Repeats (bent DNA). 
-	-skipSTR; Do not search for Short Tandem Repeats. 
-	-skipDR; Do not search for Direct Repeats (slipped DNA). 
-	-skipMR; Do not search for Mirror Repeats (triplex DNA). 
-	-skipIR; Do not search for Inverted Repeats (cruciform DNA). 
-	-skipGQ; Do not search for G-Quadruplexe motifs. 
-	-skipZ; Do not search for Z DNA motifs. 
-	-skipSlipped; Do not search for slipped subset of DRs. 
-	-skipCruciform; Do not search for cruciform subset of IRs. 
-	-skipTriplex; Do not search for triplex subset of MRs. 
-	-skipWGET; Do not make wget call to php scripts to signify completion. 
-	-doCHMOD; Run a system call to chomd command (664) on output files. 
-********************************************************************
-         EXAMPLE:
-./gfa -skipWGET -seq gfa_test.fasta -out gfa_test
-	The input sequence file is gfa_test.fasta
-	There should be 14 output files (included in test_files.tar for comparison) using the default values
-********************************************************************
- Author: Duncan E. Donohue, Ph.D.
- Expansion of work by Jack R. Collins, Ph.D.
+nonBgfa/
+├── R/                    # R functions
+│   ├── run_gfa.R
+│   └── read_gfa_results.R
+├── src/                  # C source code
+│   ├── gfa.c            # Main entry point
+│   ├── gfa.h            # Header with structure definitions
+│   ├── findAPR.c        # A-Phased Repeat detection
+│   ├── findDR.c         # Direct Repeat detection
+│   ├── findGQ.c         # G-Quadruplex detection
+│   ├── findIR.c         # Inverted Repeat detection
+│   ├── findMR.c         # Mirror Repeat detection
+│   ├── findSTR.c        # Short Tandem Repeat detection
+│   ├── findZDNA.c       # Z-DNA detection
+│   ├── read_fasta.c     # FASTA file reading
+│   ├── print_tsv_file.c # TSV output formatting
+│   └── ...              # Additional utility functions
+├── tests/               # Test suite
+│   └── testthat/
+│       ├── test-run_gfa.R
+│       ├── test-run_gfa_comprehensive.R
+│       ├── test-read_gfa_results_comprehensive.R
+│       └── fixtures/    # Test data files
+└── man/                 # Generated documentation
 ```
+
+## Usage
+
+### Basic Workflow
+
+1. **Prepare your sequences** in FASTA format
+2. **Run GFA analysis** with `run_gfa()`
+3. **Read and analyze results** with `read_gfa_results()`
+
+### Example Analysis
+
+```r
+library(nonBgfa)
+
+# Step 1: Run analysis on your sequences
+run_gfa("my_sequences.fasta", "my_analysis")
+
+# Step 2: Read the results
+results <- read_gfa_results("my_analysis")
+
+# Step 3: Explore the results
+names(results)  # See which motif types were found
+
+# Access specific motif results
+if ("GQ" %in% names(results)) {
+  gq_data <- results$GQ
+  head(gq_data)
+}
+
+# Get summary statistics
+lapply(results, nrow)  # Number of features per motif type
+```
+
+## Functions
+
+### `run_gfa(seq_file, out_prefix = "gfa_output")`
+
+Executes the GFA analysis on a FASTA input file.
+
+**Parameters:**
+- `seq_file` (character): Path to FASTA-formatted input file
+- `out_prefix` (character, default: `"gfa_output"`): Prefix for output files
+
+**Returns:** Invisibly returns the system call output (primarily called for side effects)
+
+**Output files created:**
+- `{out_prefix}_APR.tsv` - A-Phased Repeats
+- `{out_prefix}_DR.tsv` - Direct Repeats  
+- `{out_prefix}_GQ.tsv` - G-Quadruplexes
+- `{out_prefix}_IR.tsv` - Inverted Repeats
+- `{out_prefix}_MR.tsv` - Mirror Repeats
+- `{out_prefix}_STR.tsv` - Short Tandem Repeats
+- `{out_prefix}_Z.tsv` - Z-DNA
+
+**Example:**
+
+```r
+# Run analysis with default output prefix
+run_gfa("gfa_test.fasta")
+
+# Run with custom output prefix
+run_gfa("sequences.fasta", "my_analysis_results")
+```
+
+### `read_gfa_results(out_prefix = "gfa_output")`
+
+Reads and parses TSV output files produced by the GFA analysis.
+
+**Parameters:**
+- `out_prefix` (character, default: `"gfa_output"`): Prefix used when running `run_gfa()`
+
+**Returns:** A named list of data frames, one for each detected motif type
+
+**Example:**
+
+```r
+# Read results from run with prefix "my_analysis"
+results <- read_gfa_results("my_analysis")
+
+# See which motif types were found
+names(results)
+
+# Access results by motif type
+apr_repeats <- results$APR
+str_repeats <- results$STR
+
+# Get basic statistics
+nrow(results$GQ)  # Number of G-Quadruplexes found
+```
+
+## Output File Format
+
+The GFA tool generates tab-separated values (TSV) files for each motif type found. Each file contains a header row with column names followed by one row per detected motif instance.
+
+### Common TSV Columns
+
+While the exact columns depend on the motif type, typical columns include:
+
+- **start** - Starting position in the sequence
+- **end** - Ending position in the sequence
+- **pattern** - The detected motif pattern
+- **strand** - Which strand (+ or -)
+- **score** - Statistical or structural score
+
+### Example TSV File Structure
+
+```
+start	end	pattern	strand	score
+100	150	ATATATATATAT	+	85
+250	310	GCGCGCGCGC	+	92
+450	520	AAAAAATTTT	-	78
+```
+
+## Troubleshooting
+
+### "Input FASTA file does not exist"
+
+**Problem:** The path to your FASTA file is incorrect or the file doesn't exist.
+
+**Solution:** Verify the file path:
+```r
+file.exists("my_file.fasta")
+# Check current directory
+getwd()
+# List files in current directory
+list.files(pattern = "*.fasta")
+```
+
+### "Compiled gfa executable not found in src"
+
+**Problem:** The C code hasn't been compiled yet.
+
+**Solution:** Rebuild the package:
+```r
+devtools::load_all()  # Compiles C code
+# Or install the package properly
+devtools::install()
+```
+
+### "No TSV files found for this output prefix"
+
+**Problem:** The GFA analysis didn't produce any output files.
+
+**Possible causes:**
+- The GFA program didn't find any motifs in your sequences
+- The output prefix is incorrect
+- The GFA program encountered an error
+
+**Solution:** Check that the output files were created:
+```r
+# Check what files were created
+list.files(pattern = "gfa_output.*")
+# Try running with a different input file
+```
+
+### Empty Results
+
+**Problem:** GFA ran successfully but no motifs were found.
+
+**This is normal** if your sequences don't contain the specific motif types you're looking for. Not all sequences will contain all motif types.
+
+## FASTA Input Format
+
+Your input file must be in standard FASTA format:
+
+```
+>sequence_name_1
+ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+>sequence_name_2
+GCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGC
+```
+
+Requirements:
+- Header lines start with `>`
+- Sequence names can contain letters, numbers, hyphens, and underscores
+- Sequences use standard IUPAC nucleotide codes (A, T, G, C, N)
+- No length restrictions
+
+## Testing
+
+The package includes comprehensive test coverage for all functions:
+
+```r
+# Run the test suite
+devtools::test()
+
+# Run tests with detailed output
+testthat::test_file("tests/testthat/test-run_gfa_comprehensive.R")
+```
+
+## License
+
+GPL-3 (see LICENSE file)
+
+## Citation
+
+If you use this package in your research, please cite the original GFA work:
+
+```
+nonBgfa: An R package for genomic feature analysis
+Version 0.0.0.9000
+```
+
+## Support & Contributing
+
+For bug reports, feature requests, or contributions, please open an issue on the GitHub repository.
+
+## References
+
+- Non-B DNA structures and their biological significance
+- IUPAC nucleotide codes
+- FASTA format specification
