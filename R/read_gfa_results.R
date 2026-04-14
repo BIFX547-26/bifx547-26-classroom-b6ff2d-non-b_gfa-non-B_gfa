@@ -65,5 +65,26 @@ read_gfa_results <- function(out_prefix = "gfa_output") {
     stop("No TSV files found for this output prefix.", call. = FALSE)
   }
 
-  lapply(existing, read.delim, sep = "\t", header = TRUE)
+  # Read files, filtering out empty ones
+  results <- list()
+  for (name in names(existing)) {
+    file_path <- existing[[name]]
+    file_size <- file.size(file_path)
+    
+    # Only read files that have content beyond header
+    if (file_size > 0) {
+      tryCatch({
+        df <- read.delim(file_path, sep = "\t", header = TRUE)
+        # Only include if there are actual data rows
+        if (nrow(df) > 0) {
+          results[[name]] <- df
+        }
+      }, error = function(e) {
+        # Skip files that can't be read
+        NULL
+      })
+    }
+  }
+  
+  results
 }
