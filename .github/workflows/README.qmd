@@ -1,0 +1,36 @@
+# draft yml code courtesy of Gemini
+name: Render README
+
+on:
+  push:
+    paths:
+      - 'README.qmd'
+  workflow_dispatch:
+
+jobs:
+  render-quarto:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render README.qmd
+        uses: quarto-dev/quarto-actions/render@v2
+        with:
+          to: gfm
+          path: README.qmd
+          
+      - name: Commit changes
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "docs: Render README.md from README.qmd" || echo "No changes to commit"
+          git push
+          echo Add other actions to build,
+          echo test, and deploy your project.
