@@ -1,1 +1,13 @@
 
+      - name: Send-email.yml
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASS }}
+          subject: New commit pushed to ${{ github.repository }}
+          body: "New commit by ${{ github.actor }} on branch ${{ github.ref_name }}. The commit message is: ${{ github.event.head_commit.message }}""
+          to: ${{secrets.HOOD_EMAIL}}
+          from: ${{secrets.GMAIL_USERNAME}}@gmail.com
+
